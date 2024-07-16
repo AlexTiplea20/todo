@@ -1,11 +1,14 @@
 //import logo from './logo.svg';
-import React,{ useState,useEffect } from 'react';
-import './App.css';
-import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';
-import { BsCheckLg } from 'react-icons/bs';
+
+//Import la librariile necesare pentru React
+import React,{ useState,useEffect } from 'react';       
+import './App.css';                                                 //Fisierul de CSS pentru aplicatie
+import { AiOutlineDelete, AiOutlineEdit } from 'react-icons/ai';    //Import pentru ICON-uile de delete si edit
+import { BsCheckLg } from 'react-icons/bs';                         //Import pentru ICON-ul de completed
 
 function App() {
 
+  //Crearea variabilelor
   const [isCompleteScreen,setIsCompleteScreen] = useState(false);
   const [allToDos,setTodos] = useState([]);
   const [newTitle,setNewTitle] = useState(" ");
@@ -14,6 +17,7 @@ function App() {
   const [currentEdit,setCurrentEdit] = useState(" ");
   const [currentEditedItem,setcurrentEditedItem] = useState("");
 
+  //Adaugarea unui nou task
   const handleAddTodo = () => {
     let newTodoItem = {
       title:newTitle,
@@ -26,6 +30,7 @@ function App() {
     localStorage.setItem('todolist', JSON.stringify(updateTodoArr))
   };
 
+  //Stergerea unui task
   const handleDeleteTodo = index => {
     let reducedTodo = [...allToDos];
     reducedTodo.splice (index, 1);
@@ -34,6 +39,7 @@ function App() {
     setTodos (reducedTodo);
   };
 
+  //Marcarea unui task ca fiind completat, precizand data si ora cand acesta a fost completat
   const handleComplete = index => {
     let now = new Date();
     let dd = now.getDate();
@@ -56,6 +62,7 @@ function App() {
     localStorage.setItem('completedTodos', JSON.stringify(updateCompletedArr));
   };
 
+  //Stergerea unui task deja completat
   const handleDeleteCompletedTodo = index =>{
     let reducedTodo = [...completedTodos];
     reducedTodo.splice (index,1);
@@ -64,6 +71,7 @@ function App() {
     setCompletedTodos (reducedTodo);
   }
 
+  //Incarcarea si stocarea task-urilor locak
   useEffect(()=>{
     let savedTodo = JSON.parse(localStorage.getItem('todolist'));
     let savedCompletedTodo = JSON.parse(localStorage.getItem('completedTodos'));
@@ -75,25 +83,29 @@ function App() {
       setCompletedTodos(savedCompletedTodo);
     }
   },[]);
-
+  
+  //Pentru butonul de editare
   const handleEdit = (ind,item)=>{
     console.log(ind);
     setCurrentEdit(ind);
     setcurrentEditedItem(item);
   }
 
+  //Pentru modificarea campului "Title"
   const handleUpdateTitle = (value)=>{
     setcurrentEditedItem((prev)=>{
       return{...prev,title:value}
     })
   }
 
+  //Pentru modificarea campului "Description"
   const handleUpdateDescription = (value)=>{
     setcurrentEditedItem((prev)=>{
       return{...prev,description:value}
     })
   }
 
+  //Salvarea noului Title si a descrierii
   const handleUpdateToDo = ()=>{
     let newToDo = [...allToDos];
     newToDo[currentEdit] = currentEditedItem;
