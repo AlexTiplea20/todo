@@ -14,108 +14,140 @@ function App() {
   const [newTitle,setNewTitle] = useState(" ");
   const [newDescription,setNewDescription] = useState(" ");
   const [completedTodos,setCompletedTodos] = useState([]);
-  const [currentEdit,setCurrentEdit] = useState(" ");
-  const [currentEditedItem,setcurrentEditedItem] = useState("");
+  const [currentEdit,setCurrentEdit] = useState(null);
+  const [currentEditedItem,setCurrentEditedItem] = useState({});
+  const [userId, setUserId] = useState(1);
 
-  //Adaugarea unui nou task
-  const handleAddTodo = () => {
-    let newTodoItem = {
-      title:newTitle,
-      description:newDescription,
+    useEffect(() => {
+        fetch(`https://my-json-server.typicode.com/AlexTiplea20/todo/todos?userId=${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const incompleteTodos = data.filter(todo => !todo.completed);
+                const completeTodos = data.filter(todo => todo.completed);
+                setTodos(incompleteTodos);
+                setCompletedTodos(completeTodos);
+            })
+            .catch(error => console.error('Error fetching todos', error));
+    }, [userId]);
+
+    const handleAddTodo = () => {
+        let newTodoItem = {
+            userId,
+            title: newTitle,
+            description: newDescription,
+            completed: false
+        };
+
+        fetch('https://my-json-server.typicode.com/AlexTiplea20/todo/todos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newTodoItem)
+        })
+            .then(response => response.json())
+            .then(data => {
+                setTodos([...allToDos, data]);
+                setNewTitle("");
+                setNewDescription("");
+            })
+            .catch(error => console.error('Error adding todo:', error));
     };
 
-    let updateTodoArr = [...allToDos];
-    updateTodoArr.push(newTodoItem);
-    setTodos(updateTodoArr);
-    localStorage.setItem('todolist', JSON.stringify(updateTodoArr))
-  };
-
-  //Stergerea unui task
-  const handleDeleteTodo = index => {
-    let reducedTodo = [...allToDos];
-    reducedTodo.splice (index, 1);
-
-    localStorage.setItem('todolist', JSON.stringify(reducedTodo));
-    setTodos (reducedTodo);
-  };
-
-  //Marcarea unui task ca fiind completat, precizand data si ora cand acesta a fost completat
-  const handleComplete = index => {
-    let now = new Date();
-    let dd = now.getDate();
-    let mm = now.getMonth() + 1;
-    let yyyy = now.getFullYear();
-    let h = now.getHours();
-    let m = now.getMinutes();
-    let s = now.getSeconds();
-    let completedOn = dd + '-' + mm + '-' + yyyy + ' at ' + h + ':' + m + ':' + s;
-
-    let filteredItem = {
-      ...allToDos[index],
-      completedOn:completedOn,
+    const handleDeleteTodo = index => {
+        const todoToDelete = allToDos[index];
+        fetch(`https://my-json-server.typicode.com/AlexTiplea20/todo/todos/${todoToDelete.id}`, {
+            method: 'DELETE'
+        })
+            .then(() => {
+                const updatedTodos = [...allToDos];
+                updatedTodos.splice(index, 1);
+                setTodos(updatedTodos);
+            })
+            .catch(error => console.error('Error deleting todo:', error));
     };
 
-    let updateCompletedArr = [...completedTodos];
-    updateCompletedArr.push (filteredItem);
-    setCompletedTodos (updateCompletedArr);
-    handleDeleteTodo(index);
-    localStorage.setItem('completedTodos', JSON.stringify(updateCompletedArr));
-  };
+    const handleComplete = index => {
+        const now = new Date();
+        const completedOn = now.toISOString(); // Ensure the date is in ISO format
+        const todoToComplete = allToDos[index];
+        const updatedTodo = { ...todoToComplete, completed: true, completedOn };
 
-  //Stergerea unui task deja completat
-  const handleDeleteCompletedTodo = index =>{
-    let reducedTodo = [...completedTodos];
-    reducedTodo.splice (index,1);
+        fetch(`https://my-json-server.typicode.com/AlexTiplea20/todo/todos/${todoToComplete.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedTodo)
+        })
+            .then(response => response.json())
+            .then(data => {
+                const updatedTodos = [...allToDos];
+                updatedTodos.splice(index, 1);
+                setCompletedTodos([...completedTodos, data]);
+                setTodos(updatedTodos);
+            })
+            .catch(error => console.error('Error completing todo:', error));
+    };
 
-    localStorage.setItem ('completedTodos', JSON.stringify(reducedTodo));
-    setCompletedTodos (reducedTodo);
-  }
+    const handleDeleteCompletedTodo = index => {
+        const todoToDelete = completedTodos[index];
+        fetch(`https://my-json-server.typicode.com/AlexTiplea20/todo/todos/${todoToDelete.id}`, {
+            method: 'DELETE'
+        })
+            .then(() => {
+                const updatedCompletedTodos = [...completedTodos];
+                updatedCompletedTodos.splice(index, 1);
+                setCompletedTodos(updatedCompletedTodos);
+            })
+            .catch(error => console.error('Error deleting completed todo:', error));
+    };
 
-  //Incarcarea si stocarea task-urilor locak
-  useEffect(()=>{
-    let savedTodo = JSON.parse(localStorage.getItem('todolist'));
-    let savedCompletedTodo = JSON.parse(localStorage.getItem('completedTodos'));
-    if(savedTodo){
-      setTodos(savedTodo);
-    }
+    const handleEdit = (index, item) => {
+        setCurrentEdit(index);
+        setCurrentEditedItem(item);
+    };
 
-    if(savedCompletedTodo){
-      setCompletedTodos(savedCompletedTodo);
-    }
-  },[]);
-  
-  //Pentru butonul de editare
-  const handleEdit = (ind,item)=>{
-    console.log(ind);
-    setCurrentEdit(ind);
-    setcurrentEditedItem(item);
-  }
+    const handleUpdateTitle = value => {
+        setCurrentEditedItem(prev => ({ ...prev, title: value }));
+    };
 
-  //Pentru modificarea campului "Title"
-  const handleUpdateTitle = (value)=>{
-    setcurrentEditedItem((prev)=>{
-      return{...prev,title:value}
-    })
-  }
+    const handleUpdateDescription = value => {
+        setCurrentEditedItem(prev => ({ ...prev, description: value }));
+    };
 
-  //Pentru modificarea campului "Description"
-  const handleUpdateDescription = (value)=>{
-    setcurrentEditedItem((prev)=>{
-      return{...prev,description:value}
-    })
-  }
-
-  //Salvarea noului Title si a descrierii
-  const handleUpdateToDo = ()=>{
-    let newToDo = [...allToDos];
-    newToDo[currentEdit] = currentEditedItem;
-    setTodos(newToDo);
-    setCurrentEdit("");
-  }
+    const handleUpdateToDo = () => {
+        const updatedTodo = { ...currentEditedItem };
+        fetch(`https://my-json-server.typicode.com/AlexTiplea20/todo/todos/${currentEditedItem.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedTodo)
+        })
+            .then(response => response.json())
+            .then(data => {
+                const updatedTodos = [...allToDos];
+                updatedTodos[currentEdit] = data;
+                setTodos(updatedTodos);
+                setCurrentEdit(null);
+            })
+            .catch(error => console.error('Error updating todo:', error));
+    };
 
   return (
     <div className="App">
       <h1>My Todos</h1>
+
+      <div className='user-filter'>
+          <label>Select User: </label>
+          <select value ={userId} onChange={(e) => setUserId(Number(e.target.value))}>
+              <option value={1}>User 1</option>
+              <option value={2}>User 2</option>
+              <option value={3}>User 3</option>
+              {/* Add more users as needed */}
+          </select>
+      </div>
 
       <div className='todo-wrapper'>
         <div className='todo-input'>
@@ -180,12 +212,12 @@ function App() {
          })}
 
         {isCompleteScreen === true && completedTodos.map((item,index)=>{
-              return(
+            return(
                 <div className='todo-list-item' key ={index}>
                   <div>
                     <h3>{item.title}</h3>
                     <p>{item.description}</p>
-                    <p><small>Completed on: {item.completedOn}</small></p>
+                    <p><small>Completed on: {new Date(item.completedOn).toLocaleTimeString()}</small></p>
                   </div>
                   <div>
                     <AiOutlineDelete className='icon' onClick={()=>handleDeleteCompletedTodo(index)} title="Delete?"/>
